@@ -1,6 +1,8 @@
 # go-hotfix
 * go-hotfix is a use plugin and debug symbol hotfix function
 
+# 目前仅支持linux平台(windows不支持插件,macos delve不支持[插件调试](https://github.com/go-delve/delve/issues/1628))
+
 # 特性
 * 使用delve加载执行文件和so的调试符号,来找到函数路径名对应的代码地址
 * 补丁包使用go plugin方便编译
@@ -13,14 +15,12 @@
 
 
 # 注意
-* 目前仅支持linux平台(windows不支持插件,macos delve不支持插件[调试](https://github.com/go-delve/delve/issues/1628))
 * 不要使用编译参数`-ldflags="-s -w"`会加载不到调试信息
 * 找不到函数时可以考虑是不是被内联优化了,可以使用编译参数`-gcflags=all=-l`关闭内联优化
 * 编译插件包时需要注意，未被引用的函数是不会被编译的，可以考虑增加一个导出函数 `func Hotfix() { main() }` 来编译
 * 不要热更使用插件main包定义的类型作为参数或返回值的函数,main包内的类型在执行程序和补丁包中是两个不同的类型
 * 补丁包中引用的类型和全局变量会加载第一次被实例化的对象
 * 不要修改函数的参数及返回值类型
-* `go/src/runtime/plugin.go`需要注释两行 `md.bad = true return "", nil, "plugin was built with a different version of package " + pkghash.modulename`
 
 # 示例
 * 编译tracer `go build tools/tracer/tracer.go`到当前目录,或者修改路径`go_hotfix.TracerPath = "./tracer"`
