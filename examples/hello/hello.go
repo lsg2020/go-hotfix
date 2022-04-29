@@ -30,11 +30,11 @@ func main() {
 	test()
 
 	hotFunctions := []string{
-		"github.com/lsg2020/go-hotfix/examples/data.TestAdd",
-		"github.com/lsg2020/go-hotfix/examples/data.(*DataType).TestHotfix",
+		"github.com/lsg2020/go-hotfix/examples/data.testPrivateFunc",
+		"github.com/lsg2020/go-hotfix/examples/data.(*DataType).test",
 	}
 
-	err := go_hotfix.Hotfix("hello_v1.so", hotFunctions, true)
+	err := go_hotfix.Hotfix("hello_v1.so", hotFunctions, false)
 	if err != nil {
 		panic(err)
 	}
@@ -42,7 +42,7 @@ func main() {
 	fmt.Println("--------------------------- hello_v1.so")
 	test()
 
-	err = go_hotfix.Hotfix("hello_v2.so", hotFunctions, true)
+	err = go_hotfix.Hotfix("hello_v2.so", hotFunctions, false)
 	if err != nil {
 		panic(err)
 	}
