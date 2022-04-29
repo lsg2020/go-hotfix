@@ -13,6 +13,7 @@
 
 
 # 注意
+* 目前仅支持linux平台(windows不支持插件,macos delve不支持插件[调试](https://github.com/go-delve/delve/issues/1628))
 * 不要使用编译参数`-ldflags="-s -w"`会加载不到调试信息
 * 找不到函数时可以考虑是不是被内联优化了,可以使用编译参数`-gcflags=all=-l`关闭内联优化
 * 编译插件包时需要注意，未被引用的函数是不会被编译的，可以考虑增加一个导出函数 `func Hotfix() { main() }` 来编译
