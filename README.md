@@ -1,7 +1,7 @@
 # go-hotfix
 * go-hotfix is a use plugin and debug symbol hotfix function
 
-# 目前仅支持linux平台(windows不支持插件,macos delve不支持[插件调试](https://github.com/go-delve/delve/issues/1628))
+### 仅支持linux平台(windows不支持插件,macos delve不支持[插件调试](https://github.com/go-delve/delve/issues/1628))
 
 # 特性
 * 使用delve加载执行文件和so的调试符号,来找到函数路径名对应的代码地址
