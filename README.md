@@ -23,6 +23,7 @@
 * 不要修改函数的参数及返回值类型
 
 # 示例
+* 防止插件版本不一至导致插件加载失败[注释代码](https://github.com/golang/go/blob/fd6c556dc82253722a7f7b9f554a1892b0ede36e/src/runtime/plugin.go#L51-L56)
 * 编译tracer `go build tools/tracer/tracer.go`到当前目录,或者修改路径`go_hotfix.TracerPath = "./tracer"`
 * 编译示例 `go build -gcflags=all=-l examples/hello/hello.go`
 * 编译补丁包
