@@ -37,25 +37,25 @@ var TracerPath = "./tracer"
 // Only support linux
 // For example, Hotfix("hello_v1.so", []string{ "github.com/lsg2020/go-hotfix/examples/data.TestAdd"}, true)
 //
-func Hotfix(path string, names []string, threadSafe bool) error {
+func Hotfix(path string, names []string, threadSafe bool) (string, error) {
 	_, err := plugin.Open(path)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if runtime.GOOS != "linux" {
-		return ErrOnlySupportLinux
+		return "", ErrOnlySupportLinux
 	}
 
 	// load main debug symbol
 	exePath, err := os.Executable()
 	if err != nil {
-		return err
+		return "", err
 	}
 	mainBI := proc.NewBinaryInfo(runtime.GOOS, runtime.GOARCH)
 	err = mainBI.LoadBinaryInfo(exePath, 0, nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// search old function
@@ -63,7 +63,7 @@ func Hotfix(path string, names []string, threadSafe bool) error {
 	for _, name := range names {
 		f := searchFunction(mainBI.Functions, name)
 		if f == nil || f.Entry == 0 {
-			return ErrNotFoundFunctionInMainPackage
+			return "", ErrNotFoundFunctionInMainPackage
 		}
 		oldFunctions = append(oldFunctions, f)
 	}
@@ -71,21 +71,21 @@ func Hotfix(path string, names []string, threadSafe bool) error {
 	// search dynamic library
 	lib, addr, err := searchElfSharedObjects(mainBI, path)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if lib == "" {
-		return ErrSearchPluginFailed
+		return "", ErrSearchPluginFailed
 	}
 	err = mainBI.AddImage(lib, addr)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	newFunctions := []*proc.Function{}
 	for i, name := range names {
 		f := searchFunction(mainBI.Functions, name)
 		if f == nil || f.Entry == 0 || f.Entry == oldFunctions[i].Entry {
-			return ErrNotFoundFunctionInPlugin
+			return "", ErrNotFoundFunctionInPlugin
 		}
 		newFunctions = append(newFunctions, f)
 	}
@@ -93,13 +93,13 @@ func Hotfix(path string, names []string, threadSafe bool) error {
 	for i := 0; i < len(oldFunctions); i++ {
 		jumpCode := jmpToFunctionValue(0)
 		if (oldFunctions[i].End - oldFunctions[i].Entry) < uint64(len(jumpCode)) {
-			return ErrJumpCodeError
+			return "", ErrJumpCodeError
 		}
 	}
 
 	if threadSafe {
 		monkeyPatch(oldFunctions, newFunctions)
-		return nil
+		return "", nil
 	}
 	return patch(path, names, mainBI, oldFunctions, newFunctions)
 }
@@ -131,7 +131,7 @@ type TracerParam struct {
 var patchFuncMutex sync.Mutex
 var patchFuncs []reflect.Value
 
-func patch(path string, names []string, bi *proc.BinaryInfo, oldFunctions []*proc.Function, newFunctions []*proc.Function) error {
+func patch(path string, names []string, bi *proc.BinaryInfo, oldFunctions []*proc.Function, newFunctions []*proc.Function) (string, error) {
 	param := TracerParam{
 		Pid:                   os.Getpid(),
 		Path:                  path,
@@ -157,7 +157,7 @@ func patch(path string, names []string, bi *proc.BinaryInfo, oldFunctions []*pro
 
 	paramBuf, err := json.Marshal(param)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	paramStr := base64.StdEncoding.EncodeToString(paramBuf)
@@ -168,12 +168,12 @@ func patch(path string, names []string, bi *proc.BinaryInfo, oldFunctions []*pro
 	cmd.Stderr = &output
 	if err = cmd.Run(); err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("%d %s", exitError.ExitCode(), output.String())
+			return "", fmt.Errorf("%d %s", exitError.ExitCode(), output.String())
 		}
-		return fmt.Errorf("%v %s", err, output.String())
+		return "", fmt.Errorf("%v %s", err, output.String())
 	}
 	// fmt.Println(output.String())
-	return nil
+	return output.String(), nil
 }
 
 func monkeyPatch(oldFunctions []*proc.Function, newFunctions []*proc.Function) {

@@ -8,6 +8,8 @@ import (
 	"github.com/lsg2020/go-hotfix/examples/data"
 )
 
+var HotfixVersion = "1"
+
 func Hotfix() {
 	main()
 }
@@ -40,7 +42,7 @@ func main() {
 
 	time.Sleep(time.Second)
 	fmt.Println("--------------------------- hello_v1.so")
-	err := go_hotfix.Hotfix("hello_v1.so", hotFunctions, false)
+	_, err := go_hotfix.Hotfix("hello_v1.so", hotFunctions, false)
 	if err != nil {
 		panic(err)
 	}

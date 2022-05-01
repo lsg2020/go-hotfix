@@ -7,6 +7,8 @@ import (
 	"github.com/lsg2020/go-hotfix/examples/data"
 )
 
+var HotfixVersion = "1"
+
 func Hotfix() {
 	main()
 }
@@ -34,7 +36,7 @@ func main() {
 		"github.com/lsg2020/go-hotfix/examples/data.(*DataType).test",
 	}
 
-	err := go_hotfix.Hotfix("hello_v1.so", hotFunctions, false)
+	_, err := go_hotfix.Hotfix("hello_v1.so", hotFunctions, false)
 	if err != nil {
 		panic(err)
 	}
@@ -42,7 +44,7 @@ func main() {
 	fmt.Println("--------------------------- hello_v1.so")
 	test()
 
-	err = go_hotfix.Hotfix("hello_v2.so", hotFunctions, false)
+	_, err = go_hotfix.Hotfix("hello_v2.so", hotFunctions, false)
 	if err != nil {
 		panic(err)
 	}
