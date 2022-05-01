@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -17,34 +16,14 @@ import (
 	"sync"
 	"unsafe"
 
-	"bou.ke/monkey"
+	"github.com/agiledragon/gomonkey"
 	"github.com/go-delve/delve/pkg/proc"
 )
 
-var (
-	ErrOnlySupportLinux              = errors.New("only support linux")
-	ErrTooManyLibraries              = errors.New("number of loaded libraries exceeds maximum")
-	ErrSearchPluginFailed            = errors.New("search plugin image failed")
-	ErrNotFoundFunctionInMainPackage = errors.New("not found function in main package")
-	ErrNotFoundFunctionInPlugin      = errors.New("not found function in plugin")
-	ErrJumpCodeError                 = errors.New("jump code error")
-)
-
-// TracerPath from go install github.com/lsg2020/go-hotfix/tools/tracer
-var TracerPath = "./tracer"
-
-// Hotfix is a use plugin and debug symbol hotfix function
-// Only support linux
-// For example, Hotfix("hello_v1.so", []string{ "github.com/lsg2020/go-hotfix/examples/data.TestAdd"}, true)
-//
-func Hotfix(path string, names []string, threadSafe bool) (string, error) {
-	_, err := plugin.Open(path)
+func hotfix(path string, names []string, threadSafe bool) (string, error) {
+	p, err := plugin.Open(path)
 	if err != nil {
 		return "", err
-	}
-
-	if runtime.GOOS != "linux" {
-		return "", ErrOnlySupportLinux
 	}
 
 	// load main debug symbol
@@ -56,6 +35,21 @@ func Hotfix(path string, names []string, threadSafe bool) (string, error) {
 	err = mainBI.LoadBinaryInfo(exePath, 0, nil)
 	if err != nil {
 		return "", err
+	}
+
+	// load hotfix function type
+	functionTypes := make([]reflect.Type, len(names))
+	hotfixFunctionType, err := p.Lookup("HotfixFunctionType")
+	for i, name := range names {
+		functionTypes[i] = reflect.FuncOf(nil, nil, false)
+		if err == nil {
+			if f, ok := hotfixFunctionType.(func(string) reflect.Type); ok {
+				fType := f(name)
+				if fType != nil {
+					functionTypes[i] = fType
+				}
+			}
+		}
 	}
 
 	// search old function
@@ -91,17 +85,17 @@ func Hotfix(path string, names []string, threadSafe bool) (string, error) {
 	}
 
 	for i := 0; i < len(oldFunctions); i++ {
-		jumpCode := jmpToFunctionValue(0)
+		jumpCode := buildJmpDirective(0)
 		if (oldFunctions[i].End - oldFunctions[i].Entry) < uint64(len(jumpCode)) {
 			return "", ErrJumpCodeError
 		}
 	}
 
 	if threadSafe {
-		monkeyPatch(oldFunctions, newFunctions)
+		monkeyPatch(oldFunctions, newFunctions, functionTypes)
 		return "", nil
 	}
-	return patch(path, names, mainBI, oldFunctions, newFunctions)
+	return patch(path, names, mainBI, oldFunctions, newFunctions, functionTypes)
 }
 
 type Func struct {
@@ -131,7 +125,7 @@ type TracerParam struct {
 var patchFuncMutex sync.Mutex
 var patchFuncs []reflect.Value
 
-func patch(path string, names []string, bi *proc.BinaryInfo, oldFunctions []*proc.Function, newFunctions []*proc.Function) (string, error) {
+func patch(path string, names []string, bi *proc.BinaryInfo, oldFunctions []*proc.Function, newFunctions []*proc.Function, functionTypes []reflect.Type) (string, error) {
 	param := TracerParam{
 		Pid:                   os.Getpid(),
 		Path:                  path,
@@ -140,7 +134,7 @@ func patch(path string, names []string, bi *proc.BinaryInfo, oldFunctions []*pro
 	}
 
 	for i := 0; i < len(oldFunctions); i++ {
-		newFunc := reflect.MakeFunc(reflect.FuncOf(nil, nil, false), nil)
+		newFunc := reflect.MakeFunc(functionTypes[i], nil)
 		{
 			funcPtrVal := reflect.ValueOf(newFunc).FieldByName("ptr").Pointer()
 			funcPtr := (*Func)(unsafe.Pointer(funcPtrVal))
@@ -152,7 +146,7 @@ func patch(path string, names []string, bi *proc.BinaryInfo, oldFunctions []*pro
 		patchFuncMutex.Unlock()
 
 		param.FunctionEntry = append(param.FunctionEntry, oldFunctions[i].Entry)
-		param.JumpCode = append(param.JumpCode, jmpToFunctionValue((uintptr)(getPtr(newFunc))))
+		param.JumpCode = append(param.JumpCode, buildJmpDirective((uintptr)(getPointer(newFunc))))
 	}
 
 	paramBuf, err := json.Marshal(param)
@@ -176,23 +170,23 @@ func patch(path string, names []string, bi *proc.BinaryInfo, oldFunctions []*pro
 	return output.String(), nil
 }
 
-func monkeyPatch(oldFunctions []*proc.Function, newFunctions []*proc.Function) {
+func monkeyPatch(oldFunctions []*proc.Function, newFunctions []*proc.Function, functionTypes []reflect.Type) {
 	for i := 0; i < len(oldFunctions); i++ {
-		oldFunc := reflect.MakeFunc(reflect.FuncOf(nil, nil, false), nil)
+		oldFunc := reflect.MakeFunc(functionTypes[i], nil)
 		{
 			funcPtrVal := reflect.ValueOf(oldFunc).FieldByName("ptr").Pointer()
 			funcPtr := (*Func)(unsafe.Pointer(funcPtrVal))
 			funcPtr.codePtr = uintptr(oldFunctions[i].Entry)
 		}
 
-		newFunc := reflect.MakeFunc(reflect.FuncOf(nil, nil, false), nil)
+		newFunc := reflect.MakeFunc(functionTypes[i], nil)
 		{
 			funcPtrVal := reflect.ValueOf(newFunc).FieldByName("ptr").Pointer()
 			funcPtr := (*Func)(unsafe.Pointer(funcPtrVal))
 			funcPtr.codePtr = uintptr(newFunctions[i].Entry)
 		}
 
-		monkey.Patch(oldFunc.Interface(), newFunc.Interface())
+		gomonkey.ApplyFunc(oldFunc.Interface(), newFunc.Interface())
 	}
 }
 
@@ -253,7 +247,7 @@ func searchElfSharedObjects(bi *proc.BinaryInfo, name string) (string, uint64, e
 }
 
 func readPtr(bi *proc.BinaryInfo, addr uint64) (uint64, error) {
-	ptrbuf := rawMemoryAccess(uintptr(addr), bi.Arch.PtrSize())
+	ptrbuf := entryAddress(uintptr(addr), bi.Arch.PtrSize())
 	return readUintRaw(bytes.NewReader(ptrbuf), binary.LittleEndian, bi.Arch.PtrSize())
 }
 
@@ -278,7 +272,7 @@ func readUintRaw(reader io.Reader, order binary.ByteOrder, ptrSize int) (uint64,
 
 // dynamicSearchDebug searches for the DT_DEBUG entry in the .dynamic section
 func dynamicSearchDebug(bi *proc.BinaryInfo) (uint64, error) {
-	dynbuf := rawMemoryAccess(uintptr(bi.ElfDynamicSection.Addr), int(bi.ElfDynamicSection.Size))
+	dynbuf := entryAddress(uintptr(bi.ElfDynamicSection.Addr), int(bi.ElfDynamicSection.Size))
 	rd := bytes.NewReader(dynbuf)
 
 	for {
@@ -337,7 +331,7 @@ func readCString(addr uint64) (string, error) {
 		if len(r) > maxLibraryPathLength {
 			return "", fmt.Errorf("error reading libraries: string too long (%d)", len(r))
 		}
-		buf := rawMemoryAccess(uintptr(addr), 1)
+		buf := entryAddress(uintptr(addr), 1)
 		if buf[0] == 0 {
 			break
 		}
@@ -347,11 +341,11 @@ func readCString(addr uint64) (string, error) {
 	return string(r), nil
 }
 
-//go:linkname jmpToFunctionValue bou.ke/monkey.jmpToFunctionValue
-func jmpToFunctionValue(to uintptr) []byte
+//go:linkname buildJmpDirective github.com/agiledragon/gomonkey.buildJmpDirective
+func buildJmpDirective(double uintptr) []byte
 
-//go:linkname rawMemoryAccess bou.ke/monkey.rawMemoryAccess
-func rawMemoryAccess(p uintptr, length int) []byte
+//go:linkname entryAddress github.com/agiledragon/gomonkey.entryAddress
+func entryAddress(p uintptr, l int) []byte
 
-//go:linkname getPtr bou.ke/monkey.getPtr
-func getPtr(v reflect.Value) unsafe.Pointer
+//go:linkname getPointer github.com/agiledragon/gomonkey.getPointer
+func getPointer(v reflect.Value) unsafe.Pointer

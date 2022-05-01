@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 
 	go_hotfix "github.com/lsg2020/go-hotfix"
 	"github.com/lsg2020/go-hotfix/examples/data"
@@ -11,6 +12,18 @@ var HotfixVersion = "1"
 
 func Hotfix() {
 	main()
+}
+
+func HotfixFunctionType(name string) reflect.Type {
+	switch name {
+	case "github.com/lsg2020/go-hotfix/examples/data.(*DataType).TestHotfix":
+		var data *data.DataType
+		return reflect.TypeOf(data.TestHotfix)
+	case "github.com/lsg2020/go-hotfix/examples/data.(*DataType).test":
+		var data func(*data.DataType)
+		return reflect.TypeOf(data)
+	}
+	return nil
 }
 
 func testPrint(p data.DataType) {
@@ -32,6 +45,8 @@ func main() {
 	test()
 
 	hotFunctions := []string{
+		"github.com/lsg2020/go-hotfix/examples/data.TestAdd",
+		"github.com/lsg2020/go-hotfix/examples/data.(*DataType).TestHotfix",
 		"github.com/lsg2020/go-hotfix/examples/data.testPrivateFunc",
 		"github.com/lsg2020/go-hotfix/examples/data.(*DataType).test",
 	}
