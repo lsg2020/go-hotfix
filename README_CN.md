@@ -1,5 +1,5 @@
 # go-hotfix
-* go-hotfix is a use plugin and debug symbol hotfix function
+* go-hotfix is a use plugin and debug symbols hotfix function
 
 ### 仅支持linux平台(windows不支持插件,macos delve不支持[插件调试](https://github.com/go-delve/delve/issues/1628))
 
@@ -50,8 +50,8 @@
 # 注意
 * 不要使用编译参数`-ldflags="-s -w"`会加载不到调试信息
 * 找不到函数时可以考虑是不是被内联优化了,可以使用编译参数`-gcflags=all=-l`关闭内联优化
-* 不要热更使用插件main包定义的类型作为参数或返回值的函数,main包内的类型在主程序和补丁包中是两个不同的类型
-* 补丁包中引用的类型和全局变量会加载第一次被实例化的对象
+* main包内的类型在主程序和补丁包中是两个不同的类型,不要热更使用他作为参数/返回值的函数
+* 补丁包中引用的类型和全局变量会是第一次被加载的对象
 * 不要修改函数的参数及返回值类型
 * 可以新增类型,但不要修改已有的类型定义
 * 编译插件包时需要注意

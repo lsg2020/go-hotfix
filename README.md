@@ -5,7 +5,7 @@
 ### [中文](http://github.com/lsg2020/go-hotfix/tree/master/README_CN.md)
 
 # Features
-* The function addresses are obtained using debug symbols, which are obtained from the `executable` and `so` using the `delve` library
+* Use delve to load the executable and share object debug symbols to find the code address corresponding to the function pathname
 * Patch package uses `go plugin` for easy compilation
 * Thread safety, using [tracer](http://github.com/lsg2020/go-hotfix/tree/master/tools/tracer/tracer.go) block the process and then apply the patch
 * Runtime repair support: Export Functions/Private Functions/Member Methods
@@ -23,7 +23,7 @@
   * Not thread-safe, if there are other threads that happen to execute this code while it is being replaced, there will be a problem
   * How to distinguish between old and new versions of functions, If you call `monkey.Patch` directly in the plugin code, the target function and the replacement function are both implemented in the patch package and do not affect the functions in the main program at all
 * Question 1:
-    * We found that the go program has embedded debugging symbols[dwarf](http://dwarfstd.org/doc/dwarf-2.0.0.pdf) ,The debug symbol contains information about the function name and the jump code block of the function code
+    * We found that the go program has embedded debug symbols[dwarf](http://dwarfstd.org/doc/dwarf-2.0.0.pdf) ,The debug symbol contains information about the function name and the jump code block of the function code
     * More convenient is the debugger[delve](https://github.com/go-delve/delve) ,Directly provides [parsing](https://github.com/go-delve/delve/blob/9d269791d5b9a821eb5cc5d868029bff6e59d231/pkg/proc/bininfo.go#L654) of debug symbols ,That would be very convenient [direct load](https://github.com/lsg2020/go-hotfix/blob/33e1482416241c52f2e78f6cb1afdb1484a83260/hotfix_linux.go#L30-L38) [check](https://github.com/lsg2020/go-hotfix/blob/33e1482416241c52f2e78f6cb1afdb1484a83260/hotfix_linux.go#L91-L96)
 * Question 2:
     * We can learn gdb to use [ptrace](https://man7.org/linux/man-pages/man2/ptrace.2.html)
@@ -51,7 +51,7 @@
 # Warning
 * Don't use the compile parameter `-ldflags="-s -w"` it will not load debug information
 * If you can't find the function, you can consider if it is optimized inline, you can use the compile parameter `-gcflags=all=-l` to turn off inline optimization
-* Do not hotfix functions that use the types defined in the plugin's `main` package as parameters or return values, the types in the `main` package are two different types in the main program and the patch package
+* The types in the main package are two different types in the main program and the patch package, do not hotfix functions that use such types as parameters/return values
 * Types and global variables referenced in patch packages are loaded the first time the object is loaded
 * Do not modify the parameters and return value type of the function
 * You can add new types, but do not modify existing type definitions
