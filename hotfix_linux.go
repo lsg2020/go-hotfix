@@ -50,6 +50,10 @@ func hotfix(path string, names []string, threadSafe bool) (string, error) {
 				}
 			}
 		}
+
+		if functionTypes[i] == nil {
+			return "", fmt.Errorf("function not found:%s", name)
+		}
 	}
 
 	// search old function

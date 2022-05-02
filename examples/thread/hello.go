@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 
 	go_hotfix "github.com/lsg2020/go-hotfix"
@@ -12,6 +13,16 @@ var HotfixVersion = "1"
 
 func Hotfix() {
 	main()
+}
+
+func HotfixFunctionType(name string) reflect.Type {
+	switch name {
+	case "github.com/lsg2020/go-hotfix/examples/data.TestAdd":
+		return reflect.TypeOf(data.TestAdd)
+	case "github.com/lsg2020/go-hotfix/examples/data.(*DataType).TestHotfix":
+		return reflect.TypeOf((*data.DataType)(nil).TestHotfix)
+	}
+	return nil
 }
 
 func main() {

@@ -16,13 +16,16 @@ func Hotfix() {
 
 func HotfixFunctionType(name string) reflect.Type {
 	switch name {
+	case "github.com/lsg2020/go-hotfix/examples/data.TestAdd":
+		return reflect.TypeOf(data.TestAdd)
 	case "github.com/lsg2020/go-hotfix/examples/data.(*DataType).TestHotfix":
-		var data *data.DataType
-		return reflect.TypeOf(data.TestHotfix)
+		return reflect.TypeOf((*data.DataType)(nil).TestHotfix)
+	case "github.com/lsg2020/go-hotfix/examples/data.testPrivateFunc":
+		return reflect.TypeOf(data.HotfixPrivateFunc)
 	case "github.com/lsg2020/go-hotfix/examples/data.(*DataType).test":
-		var data func(*data.DataType)
-		return reflect.TypeOf(data)
+		return reflect.TypeOf(data.HotfixPrivateMethod)
 	}
+
 	return nil
 }
 

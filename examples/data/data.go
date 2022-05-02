@@ -10,12 +10,21 @@ type DataType struct {
 	B   int
 }
 
+type privateStruct struct {
+	A int
+}
+
+// HotfixPrivateFunc 仅在补丁包增加
+var HotfixPrivateFunc = testPrivateFunc
+var HotfixPrivateMethod = (*DataType)(nil).test
+
 var AddValue = "0"
 var addValue = 100
 
-func testPrivateFunc(d *DataType) {
-	fmt.Println("in testPrivateFunc")
+func testPrivateFunc(d *DataType, dd *privateStruct) {
 	d.A++
+	dd.A++
+	fmt.Println("in testPrivateFunc v1", dd.A)
 }
 
 func (d *DataType) test() {
@@ -24,7 +33,7 @@ func (d *DataType) test() {
 }
 
 func (d *DataType) TestHotfix() {
-	testPrivateFunc(d)
+	testPrivateFunc(d, &privateStruct{A: 1234})
 	d.test()
 
 	d.A += addValue
