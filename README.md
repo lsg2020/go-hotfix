@@ -56,7 +56,7 @@
 * Do not modify the parameters and return value type of the function
 * You can add new types, but do not modify existing type definitions
 * Compiling plugin packages
-  * Prevent plug-ins from failing to load due to version differences[Comment code](https://github.com/golang/go/blob/fd6c556dc82253722a7f7b9f554a1892b0ede36e/src/runtime/plugin.go#L51-L56) ,需要自己去保证加载的补丁包版本和主程序一至
+  * Prevent plug-ins from failing to load due to version differences[Comment code](https://github.com/golang/go/blob/fd6c556dc82253722a7f7b9f554a1892b0ede36e/src/runtime/plugin.go#L51-L56) ,You need to make sure that the patch package version you load is the same as the main program.
   * Unreferenced functions will not compile, consider adding an exported function `func Hotfix() { main() }` to compile
   * It is better to have version changes for different versions of the main package to prevent `plugin already loaded`
   * In the export function `HotfixFunctionType` returns the type corresponding to the hotfix function
