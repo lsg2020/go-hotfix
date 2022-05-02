@@ -5,7 +5,7 @@
 ### [中文](http://github.com/lsg2020/go-hotfix/tree/master/README_CN.md)
 
 # Features
-* Debug symbols for loading `executables` and `so` using `delve`, to find the function entry address of function pathname
+* The function addresses are obtained using debug symbols, which are obtained from the `executable` and `so` using the `delve` library
 * Patch package uses `go plugin` for easy compilation
 * Thread safety, using [tracer](http://github.com/lsg2020/go-hotfix/tree/master/tools/tracer/tracer.go) block the process and then apply the patch
 * Runtime repair support: Export Functions/Private Functions/Member Methods
