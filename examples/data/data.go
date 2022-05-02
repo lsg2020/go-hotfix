@@ -14,7 +14,7 @@ type privateStruct struct {
 	A int
 }
 
-// HotfixPrivateFunc 仅在补丁包增加
+// HotfixPrivateFunc HotfixPrivateMethod 可以仅在补丁包增加
 var HotfixPrivateFunc = testPrivateFunc
 var HotfixPrivateMethod = (*DataType)(nil).test
 
