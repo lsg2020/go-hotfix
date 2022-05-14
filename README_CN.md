@@ -34,7 +34,6 @@
     * 同样使用[delve](https://github.com/go-delve/delve) 加载补丁包,可以发现在主程序和补丁包的调试符号中对应的函数是同名的，那就可以得到新旧版本的函数的不同入口地址
 * 新的问题: dwarf中找到的是函数的入口地址,`monkey.Patch`需要的参数是运行时的函数对象,怎么根据入口地址创建出对应的函数对象呢
     * 发现如果知道函数类型`reflect.Type`,就可以根据 `reflect.MakeFunc` 创建出函数对象来,[即可设置函数对象的代码入口地址](https://github.com/AlaxLee/go-forceexport/blob/e177a7245604bc2cffffc17df1df86544042a510/go116/forceexport.go#L33-L53)
-    * 没找到安全的方法来自动根据函数名在运行时搜索出函数类型，所以需要[补丁包暴露](https://github.com/lsg2020/go-hotfix/blob/33e1482416241c52f2e78f6cb1afdb1484a83260/examples/hello/hello.go#L17-L30)
 * 理清楚问题最后实现就比较简单 `Hotfix(path string, names []string, threadSafe bool) (string, error)`
     * 例: `Hotfix("hello_v1.so", []string{ "github.com/lsg2020/go-hotfix/examples/data.(*DataType).test"}, false)`
         * `path`: 插件包的加载路径
@@ -58,7 +57,6 @@
   * 防止插件因版本不一至加载失败[注释代码](https://github.com/golang/go/blob/fd6c556dc82253722a7f7b9f554a1892b0ede36e/src/runtime/plugin.go#L51-L56) ,需要自己去保证加载的补丁包版本和主程序一至
   * 未被引用的函数是不会被编译的，可以考虑增加一个导出函数 `func Hotfix() { main() }` 来编译
   * 补丁包不同的版本main包最好有版本变化，防止出现 `plugin already loaded`
-  * 在导出函数`HotfixFunctionType`里返回热更函数对应的类型
 
 # 示例测试
 * [注释代码](https://github.com/golang/go/blob/fd6c556dc82253722a7f7b9f554a1892b0ede36e/src/runtime/plugin.go#L51-L56)

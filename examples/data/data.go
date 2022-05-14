@@ -14,17 +14,13 @@ type privateStruct struct {
 	A int
 }
 
-// HotfixPrivateFunc HotfixPrivateMethod 可以仅在补丁包增加
-var HotfixPrivateFunc = testPrivateFunc
-var HotfixPrivateMethod = (*DataType)(nil).test
-
 var AddValue = "0"
 var addValue = 100
 
 func testPrivateFunc(d *DataType, dd *privateStruct) {
 	d.A++
 	dd.A++
-	fmt.Println("in testPrivateFunc v1", dd.A)
+	fmt.Println("in testPrivateFunc v2", dd)
 }
 
 func (d *DataType) test() {

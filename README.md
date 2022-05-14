@@ -35,7 +35,6 @@
     * Using [delve](https://github.com/go-delve/delve) load the patch package, you can find that the corresponding functions in the debug symbols of the main program and the patch package are of the same name, so you can get the different entry addresses of the old and new versions of the functions
 * New Question: `monkey.Patch` requires a runtime function object, how to create the corresponding function object based on the entry address?
     * If you know the function type `reflect.Type`, you can create a function object based on `reflect.MakeFunc`, [set the code entry address of the function object](https://github.com/AlaxLee/go-forceexport/blob/e177a7245604bc2cffffc17df1df86544042a510/go116/forceexport.go#L33-L53)
-    * Didn't find a safe way to automatically search for function types at runtime based on function names, so [patch package exposure](https://github.com/lsg2020/go-hotfix/blob/33e1482416241c52f2e78f6cb1afdb1484a83260/examples/hello/hello.go#L17-L30) is needed
 * The final implementation is relatively simple `Hotfix(path string, names []string, threadSafe bool) (string, error)`
     * Example: `Hotfix("hello_v1.so", []string{ "github.com/lsg2020/go-hotfix/examples/data.(*DataType).test"}, false)`
         * `path`: Patch package load path
@@ -59,7 +58,6 @@
   * Prevent plug-ins from failing to load due to version differences[Comment code](https://github.com/golang/go/blob/fd6c556dc82253722a7f7b9f554a1892b0ede36e/src/runtime/plugin.go#L51-L56) ,You need to make sure that the patch package version you load is the same as the main program.
   * Unreferenced functions will not compile, consider adding an exported function `func Hotfix() { main() }` to compile
   * It is better to have version changes for different versions of the main package to prevent `plugin already loaded`
-  * In the export function `HotfixFunctionType` returns the type corresponding to the hotfix function
 
 # Example
 * [Comment code](https://github.com/golang/go/blob/fd6c556dc82253722a7f7b9f554a1892b0ede36e/src/runtime/plugin.go#L51-L56)
