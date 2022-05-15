@@ -18,7 +18,7 @@ import (
 )
 
 func hotfix(path string, names []string, variadic []bool, threadSafe bool) (string, error) {
-	dwarf, err := gort.NewDwarf("")
+	dwarf, err := gort.NewDwarfRT("")
 	if err != nil {
 		return "", err
 	}

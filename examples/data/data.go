@@ -20,7 +20,7 @@ var addValue = 100
 func testPrivateFunc(d *DataType, dd *privateStruct) {
 	d.A++
 	dd.A++
-	fmt.Println("in testPrivateFunc v2", dd)
+	fmt.Println("in testPrivateFunc v0", dd)
 }
 
 func (d *DataType) test() {
